@@ -1,0 +1,53 @@
+import joblib
+import numpy as np
+from pathlib import Path
+
+# 1. Load model + encoder
+BASE_DIR = Path(__file__).resolve().parents[2]
+model = joblib.load(BASE_DIR / "models" / "xgb_model.pkl")
+encoder = joblib.load(BASE_DIR / "models" / "service_encoder.pkl")
+
+print("✅ Model loaded!")
+
+# 2. Predict function
+def predict_time(service, distance, experience, is_peak_hour):
+
+    # Validate
+    if not (0 <= distance <= 100):
+        raise ValueError("distance phải từ 0-100 km")
+
+    if not (0 <= experience <= 30):
+        raise ValueError("experience phải từ 0-30 năm")
+
+    if is_peak_hour not in [0, 1]:
+        raise ValueError("is_peak_hour phải là 0 hoặc 1")
+
+    # 3. Encode service (QUAN TRỌNG)
+    service_encoded = encoder.transform([service])[0]
+
+    # 5. Create input vector (PHẢI ĐÚNG THỨ TỰ TRAIN)
+    sample = np.array([[
+        service_encoded,
+        distance,
+        experience,
+        is_peak_hour
+    ]])
+
+    # 6. Predict
+    prediction = model.predict(sample)[0]
+
+    return round(prediction, 2)
+
+
+# 7. Test cases
+if __name__ == "__main__":
+    print("\n=== TEST ===")
+
+    print("Case 1:",
+          predict_time("Sửa máy tính", 5, 2, 0))
+
+    print("Case 2:",
+          predict_time("Sửa xe ô tô", 80, 20, 1))
+
+    print("Case 3:",
+          predict_time("Sửa điện thoại", 30, 10, 0))
