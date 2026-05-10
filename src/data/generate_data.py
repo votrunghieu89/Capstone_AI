@@ -5,24 +5,41 @@ import math
 def generate_repair_dataset(n_samples=10000, outlier_ratio=0.03, random_seed=42):
     np.random.seed(random_seed)
     services = [
-        "Sửa chửa thiết bị gia dụng",
-        "Sửa máy tính",
-        "Sửa xe ô tô",
-        "Sửa xe máy",
-        "Sửa điện thoại",
-        "Sửa điện nước dân dụng",
-        "Sửa thiết bị văn phòng"
+        "Sửa chữa và bảo dưỡng máy lạnh",
+        "Sửa chữa và bảo dưỡng máy giặt",
+        "Sửa chữa và bảo dưỡng tủ lạnh",
+        "Sửa chữa và bảo dưỡng quạt điện",
+        "Sửa chữa và bảo dưỡng lò vi sóng",
+        "Sửa chữa và bảo dưỡng nồi cơm điện",
+        "Sửa chữa và bảo dưỡng laptop",
+        "Sửa chữa và bảo dưỡng máy tính",
+        "Sửa chữa và bảo dưỡng điện thoại",
+        "Sửa chữa và bảo dưỡng TV",
+        "Sửa chữa và bảo dưỡng điện dân dụng",
+        "Sửa chữa và bảo dưỡng hệ thống nước",
+        "Sửa chữa và bảo dưỡng xe máy",
+        "Sửa chữa và bảo dưỡng ô tô",
+        "Sửa chữa và bảo dưỡng máy in"
     ]
-    
+
     service_base = {
-        "Sửa chửa thiết bị gia dụng": 120,
-        "Sửa máy tính": 60,
-        "Sửa xe ô tô": 180,
-        "Sửa xe máy": 120,
-        "Sửa điện thoại": 40,
-        "Sửa điện nước dân dụng": 80,
-        "Sửa thiết bị văn phòng": 120
+        "Sửa chữa và bảo dưỡng máy lạnh": 150,
+        "Sửa chữa và bảo dưỡng máy giặt": 130,
+        "Sửa chữa và bảo dưỡng tủ lạnh": 120,
+        "Sửa chữa và bảo dưỡng quạt điện": 50,
+        "Sửa chữa và bảo dưỡng lò vi sóng": 90,
+        "Sửa chữa và bảo dưỡng nồi cơm điện": 60,
+        "Sửa chữa và bảo dưỡng laptop": 100,
+        "Sửa chữa và bảo dưỡng máy tính": 80,
+        "Sửa chữa và bảo dưỡng điện thoại": 70,
+        "Sửa chữa và bảo dưỡng TV": 110,
+        "Sửa chữa và bảo dưỡng điện dân dụng": 100,
+        "Sửa chữa và bảo dưỡng hệ thống nước": 120,
+        "Sửa chữa và bảo dưỡng xe máy": 90,
+        "Sửa chữa và bảo dưỡng ô tô": 200,
+        "Sửa chữa và bảo dưỡng máy in": 85
     }
+
     data = []
 
     for _ in range(n_samples):
@@ -30,7 +47,10 @@ def generate_repair_dataset(n_samples=10000, outlier_ratio=0.03, random_seed=42)
         service = np.random.choice(services)
         base_time = service_base[service]
         
-        distance = int(np.random.uniform(0, 150))
+        distance = np.random.choice(
+                        np.arange(1, 51),
+                        p=np.linspace(50, 1, 50) / np.linspace(50, 1, 50).sum()
+                    )
 
         
         experience = int(np.random.choice(
@@ -45,7 +65,7 @@ def generate_repair_dataset(n_samples=10000, outlier_ratio=0.03, random_seed=42)
         is_peak_hour = 1 if (7 <= hour <= 9 or 14 <= hour <= 19) else 0
         
         # 4. Noise
-        noise = np.random.normal(0, 2.5)
+        noise = np.random.normal(0, base_time * 0.08)
 
         # 5. Formula
         time = (
@@ -85,7 +105,7 @@ def generate_repair_dataset(n_samples=10000, outlier_ratio=0.03, random_seed=42)
 
 
 # Generate data
-df = generate_repair_dataset(n_samples=50000, outlier_ratio=0.01)
+df = generate_repair_dataset(n_samples=60000, outlier_ratio=0.01)
 
 # Save CSV
 df.to_csv(r"E:\FixAI\data\output\datatest.csv", index=False)

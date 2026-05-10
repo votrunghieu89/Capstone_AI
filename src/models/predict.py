@@ -13,7 +13,7 @@ print("✅ Model loaded!")
 def predict_time(service, distance, experience, is_peak_hour):
 
     # Validate
-    if not (0 <= distance <= 100):
+    if not (0 <= distance <= 150):
         raise ValueError("distance phải từ 0-100 km")
 
     if not (0 <= experience <= 30):
@@ -24,13 +24,15 @@ def predict_time(service, distance, experience, is_peak_hour):
 
     # 3. Encode service (QUAN TRỌNG)
     service_encoded = encoder.transform([service])[0]
-
+    
+    distance_per_exp = distance / (experience + 1)
     # 5. Create input vector (PHẢI ĐÚNG THỨ TỰ TRAIN)
     sample = np.array([[
         service_encoded,
         distance,
         experience,
-        is_peak_hour
+        is_peak_hour,
+        distance_per_exp
     ]])
 
     # 6. Predict
@@ -44,10 +46,10 @@ if __name__ == "__main__":
     print("\n=== TEST ===")
 
     print("Case 1:",
-          predict_time("Sửa máy tính", 5, 2, 0))
+          predict_time("Sửa chữa và bảo dưỡng ô tô", 10, 20, 0))
 
     print("Case 2:",
-          predict_time("Sửa xe ô tô", 80, 20, 1))
+          predict_time("Sửa chữa và bảo dưỡng ô tô", 20, 20, 0))
 
     print("Case 3:",
-          predict_time("Sửa điện thoại", 30, 10, 0))
+          predict_time("Sửa chữa và bảo dưỡng ô tô", 50, 20, 1))

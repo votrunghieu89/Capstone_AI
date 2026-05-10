@@ -30,7 +30,7 @@ def predict(req: PredictRequest):
     is_peak_hour = req.is_peak_hour
 
     # Validate
-    if not (0 <= distance <= 100):
+    if not (0 <= distance <= 150):
         return {"error": "distance phải 0-100"}
 
     if not (0 <= experience <= 30):
@@ -41,13 +41,13 @@ def predict(req: PredictRequest):
 
     
     service_encoded = encoder.transform([service])[0]
-
+    distance_per_exp = req.distance / (req.experience + 1)
     sample = np.array([[
         service_encoded,
         distance,
         experience,
-        is_peak_hour
-        
+        is_peak_hour,
+        distance_per_exp
     ]])
 
     prediction = model.predict(sample)[0]
