@@ -86,37 +86,89 @@ print(result.head(10))
 # 8. VISUALIZATION
 # =========================
 
-# 8.1 Actual vs Predicted
+# 8.1 Actual vs Predicted (remove outliers)
+
+df_plot = result.copy()
+
+# IQR filter cho cả actual và predicted
+Q1_actual = df_plot["actual"].quantile(0.25)
+Q3_actual = df_plot["actual"].quantile(0.75)
+IQR_actual = Q3_actual - Q1_actual
+
+Q1_pred = df_plot["predicted"].quantile(0.25)
+Q3_pred = df_plot["predicted"].quantile(0.75)
+IQR_pred = Q3_pred - Q1_pred
+
+filtered = df_plot[
+    (df_plot["actual"] >= Q1_actual - 1.5 * IQR_actual) &
+    (df_plot["actual"] <= Q3_actual + 1.5 * IQR_actual) &
+    (df_plot["predicted"] >= Q1_pred - 1.5 * IQR_pred) &
+    (df_plot["predicted"] <= Q3_pred + 1.5 * IQR_pred)
+]
+
+# Plot
 plt.figure()
-plt.scatter(result["actual"], result["predicted"], alpha=0.5)
+plt.scatter(filtered["actual"], filtered["predicted"], alpha=0.5)
 plt.xlabel("Actual Completion Time")
 plt.ylabel("Predicted Completion Time")
 plt.title("Actual vs Predicted")
 plt.show()
+# 8.2 Residual Plot (remove outliers)
 
-# 8.2 Residual Plot
-residuals = result["error"]
+df_plot = result.copy()
+
+residuals = df_plot["error"]
+
+# IQR filter cho residuals
+Q1 = residuals.quantile(0.25)
+Q3 = residuals.quantile(0.75)
+IQR = Q3 - Q1
+
+filtered = df_plot[
+    (residuals >= Q1 - 1.5 * IQR) &
+    (residuals <= Q3 + 1.5 * IQR)
+]
 
 plt.figure()
-plt.scatter(result["predicted"], residuals, alpha=0.5)
+plt.scatter(filtered["predicted"], filtered["error"], alpha=0.5)
 plt.axhline(0, color="red")
 plt.xlabel("Predicted")
 plt.ylabel("Residuals")
 plt.title("Residual Plot")
 plt.show()
 
-# 8.3 Error Distribution
-plt.figure()
-plt.hist(residuals, bins=30)
+import numpy as np
+import matplotlib.pyplot as plt
+
+residuals = result["error"]
+
+# 1. lọc outlier theo percentile (giữ 1% - 99%)
+low, high = np.percentile(residuals, [1, 99])
+filtered = residuals[(residuals >= low) & (residuals <= high)]
+
+plt.figure(figsize=(8,5))
+
+plt.hist(filtered, bins=40, edgecolor="black", alpha=0.75)
+
+plt.axvline(0, color="red", linestyle="--", linewidth=2)
+
 plt.title("Error Distribution")
 plt.xlabel("Error")
 plt.ylabel("Frequency")
+
+plt.grid(alpha=0.2)
 plt.show()
 
 # =========================
 # 9. ERROR ANALYSIS BY SERVICE
 # =========================
-service_error = result.groupby("service")["error"].mean().sort_values()
+result["service_name"] = encoder.inverse_transform(result["service"])
+service_error = (
+    result[result["service"] != 12]   # loại service 12
+    .groupby("service_name")["error"]
+    .mean()
+    .sort_values()
+)
 
 print("\n=== Mean Error by Service ===")
 print(service_error)

@@ -4,108 +4,112 @@ import joblib
 
 from xgboost import XGBRegressor
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import KFold, cross_val_score
+from sklearn.model_selection import KFold, GridSearchCV
 
-# =========================
-# 1. LOAD DATA
-# =========================
+
+# ======================
+# LOAD DATA
+# ======================
 df = pd.read_csv("E:/FixAI/data/processed/train.csv")
 
 print("Original shape:", df.shape)
 
-# =========================
-# 2. CLEAN DATA
-# =========================
+
+# ======================
+# CLEAN DATA
+# ======================
+df = df.dropna()
+
 df = df[df["completion_time"] > 0]
 df = df[df["completion_time"] < df["completion_time"].quantile(0.99)]
 
 print("After cleaning:", df.shape)
 
-# =========================
-# 3. FEATURE ENGINEERING
-# =========================
 
+# ======================
+# ENCODE
+# ======================
 le = LabelEncoder()
 df["service"] = le.fit_transform(df["service"])
 
 joblib.dump(le, "E:/FixAI/models/service_encoder.pkl")
 
+
+# ======================
+# FEATURE ENGINEERING
+# ======================
 df["distance_per_exp"] = df["distance"] / (df["experience"] + 1)
 
-# =========================
-# 4. SPLIT X / Y
-# =========================
+
+# ======================
+# SPLIT X / y
+# ======================
 X = df.drop(columns=["completion_time"])
 y = df["completion_time"]
 
-# =========================
-# 5. MODEL
-# =========================
-model = XGBRegressor(
-    n_estimators=2000,
-    max_depth=4,
-    learning_rate=0.01,
-    subsample=0.85,
-    colsample_bytree=0.85,
-    min_child_weight=10,
-    gamma=0.1,
-    reg_alpha=0.5,
-    reg_lambda=2.0,
-    random_state=42
-)
 
-# =========================
-# 6. CROSS VALIDATION (K-FOLD)
-# =========================
-print("\n=== CROSS VALIDATION START ===")
+# ======================
+# MODEL BASE
+# ======================
+xgb = XGBRegressor(random_state=42)
 
+
+# ======================
+# HYPERPARAMETER GRID
+# ======================
+param_grid = {
+    "n_estimators": [500, 1000, 2000],
+    "max_depth": [3, 4, 6],
+    "learning_rate": [0.01, 0.05, 0.1],
+    "subsample": [0.8, 0.85, 1.0],
+    "colsample_bytree": [0.8, 0.85, 1.0],
+}
+
+
+# ======================
+# CROSS VALIDATION SETUP
+# ======================
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
-mae_scores = cross_val_score(
-    model,
-    X,
-    y,
+
+# ======================
+# GRID SEARCH (CV + TUNING)
+# ======================
+print("\n=== GRID SEARCH START ===")
+
+grid = GridSearchCV(
+    estimator=xgb,
+    param_grid=param_grid,
     cv=kf,
-    scoring="neg_mean_absolute_error"
+    scoring="r2",
+    verbose=2,
+    n_jobs=-1
 )
 
-rmse_scores = cross_val_score(
-    model,
-    X,
-    y,
-    cv=kf,
-    scoring="neg_root_mean_squared_error"
-)
+grid.fit(X, y)
 
-r2_scores = cross_val_score(
-    model,
-    X,
-    y,
-    cv=kf,
-    scoring="r2"
-)
 
-print("\n=== CV RESULTS ===")
+# ======================
+# BEST RESULT
+# ======================
+print("\n=== BEST RESULT ===")
+print("Best Params:", grid.best_params_)
+print("Best Score :", grid.best_score_)
 
-print("MAE per fold:", -mae_scores)
-print("Mean MAE    :", -mae_scores.mean())
 
-print("\nRMSE per fold:", -rmse_scores)
-print("Mean RMSE    :", -rmse_scores.mean())
+# ======================
+# FINAL MODEL
+# ======================
+best_model = grid.best_estimator_
 
-print("\nR2 per fold:", r2_scores)
-print("Mean R2    :", r2_scores.mean())
+best_model.fit(X, y)
 
-# =========================
-# 7. TRAIN FINAL MODEL (FULL DATA)
-# =========================
-model.fit(X, y)
+print("\n✅ Final model trained!")
 
-print("\n✅ Final training completed!")
 
-# =========================
-# 8. SAVE MODEL
-# =========================
-joblib.dump(model, "E:/FixAI/models/xgb_model.pkl")
+# ======================
+# SAVE MODEL
+# ======================
+joblib.dump(best_model, "E:/FixAI/models/xgb_model.pkl")
 
 print("✅ Model saved!")
