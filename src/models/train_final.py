@@ -26,7 +26,6 @@ df["service"] = le.fit_transform(df["service"])
 
 joblib.dump(le, "E:/FixAI/models/service_encoder.pkl")
 
-df["distance_per_exp"] = df["distance"] / (df["experience"] + 1)
 
 
 X = df.drop(columns=["completion_time"])
@@ -52,8 +51,6 @@ model = XGBRegressor(
 
 
 model.fit(X, y)
-
-print("\n✅ Final training completed!")
 
 
 joblib.dump(model, "E:/FixAI/models/xgb_model.pkl")

@@ -30,7 +30,7 @@ print("Test data shape:", df.shape)
 # 3. ENCODE SERVICE
 # =========================
 df["service"] = encoder.transform(df["service"])
-df["distance_per_exp"] = df["distance"] / (df["experience"] + 1)
+
 # =========================
 # 4. SPLIT X / Y
 # =========================
@@ -90,21 +90,37 @@ print(result.head(10))
 
 df_plot = result.copy()
 
-# IQR filter cho cả actual và predicted
-Q1_actual = df_plot["actual"].quantile(0.25)
-Q3_actual = df_plot["actual"].quantile(0.75)
-IQR_actual = Q3_actual - Q1_actual
+# Tính sai số tuyệt đối
+df_plot["abs_error"] = abs(df_plot["actual"] - df_plot["predicted"])
 
-Q1_pred = df_plot["predicted"].quantile(0.25)
-Q3_pred = df_plot["predicted"].quantile(0.75)
-IQR_pred = Q3_pred - Q1_pred
+# Remove các điểm lệch quá lớn (>50)
+filtered = df_plot[df_plot["abs_error"] <= 60]
 
-filtered = df_plot[
-    (df_plot["actual"] >= Q1_actual - 1.5 * IQR_actual) &
-    (df_plot["actual"] <= Q3_actual + 1.5 * IQR_actual) &
-    (df_plot["predicted"] >= Q1_pred - 1.5 * IQR_pred) &
-    (df_plot["predicted"] <= Q3_pred + 1.5 * IQR_pred)
-]
+# Plot
+plt.figure(figsize=(7,7))
+
+plt.scatter(
+    filtered["actual"],
+    filtered["predicted"],
+    alpha=0.6
+)
+
+# Đường perfect prediction
+min_val = min(filtered["actual"].min(), filtered["predicted"].min())
+max_val = max(filtered["actual"].max(), filtered["predicted"].max())
+
+plt.plot(
+    [min_val, max_val],
+    [min_val, max_val],
+    linestyle="--"
+)
+
+plt.xlabel("Actual")
+plt.ylabel("Predicted")
+plt.title("Actual vs Predicted")
+plt.grid(alpha=0.3)
+
+plt.show()
 
 # Plot
 plt.figure()
@@ -189,3 +205,48 @@ under = (result["predicted"] < result["actual"]).sum()
 print("\n=== Prediction Bias ===")
 print(f"Over-predict : {over}")
 print(f"Under-predict: {under}")
+
+
+# =========================
+# 11. FEATURE IMPORTANCE
+# =========================
+
+# lấy importance
+importance = model.feature_importances_
+
+# tên feature
+feature_names = X_test.columns
+
+# dataframe cho đẹp
+feat_imp = pd.DataFrame({
+    "feature": feature_names,
+    "importance": importance
+})
+
+# sort giảm dần
+feat_imp = feat_imp.sort_values(
+    by="importance",
+    ascending=False
+)
+
+print("\n=== FEATURE IMPORTANCE ===")
+print(feat_imp)
+
+# plot
+plt.figure(figsize=(10,6))
+
+plt.barh(
+    feat_imp["feature"],
+    feat_imp["importance"]
+)
+
+plt.xlabel("Importance Score")
+plt.ylabel("Feature")
+plt.title("XGBoost Feature Importance")
+
+# feature quan trọng nhất nằm trên cùng
+plt.gca().invert_yaxis()
+
+plt.grid(alpha=0.2)
+
+plt.show()

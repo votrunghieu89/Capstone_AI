@@ -59,6 +59,14 @@ def generate_repair_dataset(n_samples=10000, outlier_ratio=0.03, random_seed=42)
                 np.random.uniform(0, 30, 40)
             ])
         ))
+        if experience < 1:
+            exp_reduction = 5          # Thợ mới tinh, không giảm
+        elif experience < 3:
+            exp_reduction = 15         # Thợ 1-3 năm: giảm 10 phút
+        elif experience < 8:
+            exp_reduction = 25         # Thợ 3-8 năm: giảm 25 phút
+        else:
+            exp_reduction = 40         # Thợ trên 8 năm (lão luyện): giảm 40 phút
 
         # 3. Hour
         hour = np.random.randint(0, 24)
@@ -71,9 +79,8 @@ def generate_repair_dataset(n_samples=10000, outlier_ratio=0.03, random_seed=42)
         time = (
             base_time
             + distance * 2.1
-            - experience * 0.6
-            + is_peak_hour * 15
-            + (1 / (experience + 1)) * 15
+            - exp_reduction
+            + is_peak_hour * 10
             + noise
         )
 

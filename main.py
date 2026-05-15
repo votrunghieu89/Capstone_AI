@@ -3,6 +3,7 @@ import joblib
 import numpy as np
 from pathlib import Path
 from pydantic import BaseModel
+import pandas as pd
 
 class PredictRequest(BaseModel):
     service: str
@@ -41,14 +42,13 @@ def predict(req: PredictRequest):
 
     
     service_encoded = encoder.transform([service])[0]
-    distance_per_exp = req.distance / (req.experience + 1)
-    sample = np.array([[
-        service_encoded,
-        distance,
-        experience,
-        is_peak_hour,
-        distance_per_exp
-    ]])
+  
+    sample = pd.DataFrame([{
+        "service": service_encoded,
+        "distance": distance,
+        "experience": experience,
+        "is_peak_hour": is_peak_hour
+    }])
 
     prediction = model.predict(sample)[0]
 
