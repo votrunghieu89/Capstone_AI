@@ -35,10 +35,6 @@ df["service"] = le.fit_transform(df["service"])
 joblib.dump(le, "E:/FixAI/models/service_encoder.pkl")
 
 
-# ======================
-# FEATURE ENGINEERING
-# ======================
-df["distance_per_exp"] = df["distance"] / (df["experience"] + 1)
 
 
 # ======================

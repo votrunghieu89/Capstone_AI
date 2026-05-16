@@ -10,8 +10,8 @@ encoder = joblib.load(BASE_DIR / "models" / "service_encoder.pkl")
 
 print("✅ Model loaded!")
 
-# 2. Predict function
-def predict_time(service, distance, experience, is_peak_hour):
+# 2. Predict function (UPDATED)
+def predict_time(service, distance, experience, is_peak_hour, rain_ratio):
 
     # Validate
     if not (0 <= distance <= 150):
@@ -23,16 +23,19 @@ def predict_time(service, distance, experience, is_peak_hour):
     if is_peak_hour not in [0, 1]:
         raise ValueError("is_peak_hour phải là 0 hoặc 1")
 
+    if rain_ratio not in [0.0, 0.5, 1.0]:
+        raise ValueError("rain_ratio phải là 0.0 / 0.5 / 1.0")
+
     # Encode service
     service_encoded = encoder.transform([service])[0]
 
-    # IMPORTANT:
-    # phải đúng tên cột lúc train
+    # Create input
     sample = pd.DataFrame([{
         "service": service_encoded,
         "distance": distance,
         "experience": experience,
-        "is_peak_hour": is_peak_hour
+        "is_peak_hour": is_peak_hour,
+        "rain_ratio": rain_ratio
     }])
 
     # Debug
@@ -51,10 +54,11 @@ if __name__ == "__main__":
     print("\n=== TEST ===")
 
     print("Case 1:",
-          predict_time("Sửa chữa và bảo dưỡng ô tô", 10, 20, 0))
+          predict_time("Sửa chữa và bảo dưỡng ô tô", 10, 20, 0, 0.0))
 
     print("Case 2:",
-          predict_time("Sửa chữa và bảo dưỡng ô tô", 20, 20, 0))
+          predict_time("Sửa chữa và bảo dưỡng ô tô", 20, 20, 0, 0.5))
 
     print("Case 3:",
-          predict_time("Sửa chữa và bảo dưỡng ô tô", 50, 20, 1))
+          predict_time("Sửa chữa và bảo dưỡng ô tô", 50, 20, 1, 1.0))
+

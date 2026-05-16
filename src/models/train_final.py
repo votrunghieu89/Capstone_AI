@@ -33,22 +33,17 @@ y = df["completion_time"]
 
 
 model = XGBRegressor(
-    n_estimators=2000,
+    n_estimators=800,
     max_depth=4,
-    learning_rate=0.05,
+    learning_rate=0.03,
     subsample=0.8,
     colsample_bytree=0.8,
     min_child_weight=10,
     gamma=0.1,
-    reg_alpha=0.5,
-    reg_lambda=2.0,
+    reg_alpha=0.8,
+    reg_lambda=2.2,
     random_state=42
 )
-
-
-
-
-
 
 model.fit(X, y)
 

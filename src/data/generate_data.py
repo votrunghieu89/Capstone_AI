@@ -4,6 +4,7 @@ import math
 
 def generate_repair_dataset(n_samples=10000, outlier_ratio=0.03, random_seed=42):
     np.random.seed(random_seed)
+
     services = [
         "Sửa chữa và bảo dưỡng máy lạnh",
         "Sửa chữa và bảo dưỡng máy giặt",
@@ -40,64 +41,96 @@ def generate_repair_dataset(n_samples=10000, outlier_ratio=0.03, random_seed=42)
         "Sửa chữa và bảo dưỡng máy in": 85
     }
 
+    # =========================
+    # 🌧️ BALANCED RAIN (33% - 33% - 33%)
+    # =========================
+    rain_labels = (
+        [0.0] * (n_samples // 3) +
+        [0.5] * (n_samples // 3) +
+        [1.0] * (n_samples - 2 * (n_samples // 3))
+    )
+    np.random.shuffle(rain_labels)
+
+    # =========================
+    # 👷 BALANCED EXPERIENCE (33% - 33% - 33%)
+    # =========================
+    exp_labels = (
+        list(np.random.uniform(0, 3, n_samples // 3)) +
+        list(np.random.uniform(3, 8, n_samples // 3)) +
+        list(np.random.uniform(8, 30, n_samples - 2 * (n_samples // 3)))
+    )
+    np.random.shuffle(exp_labels)
+
     data = []
 
-    for _ in range(n_samples):
-        
+    for i in range(n_samples):
+
         service = np.random.choice(services)
         base_time = service_base[service]
-        
+
         distance = np.random.choice(
-                        np.arange(1, 51),
-                        p=np.linspace(50, 1, 50) / np.linspace(50, 1, 50).sum()
-                    )
+            np.arange(1, 51),
+            p=np.linspace(50, 1, 50) / np.linspace(50, 1, 50).sum()
+        )
 
-        
-        experience = int(np.random.choice(
-            np.concatenate([
-                np.random.uniform(2, 10, 60),
-                np.random.uniform(0, 30, 40)
-            ])
-        ))
+        experience = exp_labels[i]
+
+        # =========================
+        # EXPERIENCE EFFECT
+        # =========================
         if experience < 1:
-            exp_reduction = 5          # Thợ mới tinh, không giảm
+            exp_reduction = 5
         elif experience < 3:
-            exp_reduction = 15         # Thợ 1-3 năm: giảm 10 phút
+            exp_reduction = 15
         elif experience < 8:
-            exp_reduction = 25         # Thợ 3-8 năm: giảm 25 phút
+            exp_reduction = 25
         else:
-            exp_reduction = 40         # Thợ trên 8 năm (lão luyện): giảm 40 phút
+            exp_reduction = 40
 
-        # 3. Hour
         hour = np.random.randint(0, 24)
         is_peak_hour = 1 if (7 <= hour <= 9 or 14 <= hour <= 19) else 0
-        
-        # 4. Noise
+
         noise = np.random.normal(0, base_time * 0.08)
 
-        # 5. Formula
+        # =========================
+        # RAIN FEATURE
+        # =========================
+        rain_ratio = rain_labels[i]
+
+        # =========================
+        # TIME FORMULA
+        # =========================
         time = (
             base_time
             + distance * 2.1
             - exp_reduction
             + is_peak_hour * 10
+            + rain_ratio * 15
             + noise
         )
 
-        # 6. Outlier
+        # Outlier
         if np.random.rand() < outlier_ratio:
             if np.random.rand() < 0.5:
                 time *= np.random.uniform(1.5, 2.5)
             else:
                 time *= np.random.uniform(0.5, 0.8)
 
-        
+        # rounding
         if time >= 5:
-            time = math.ceil(time)   # làm tròn lên
+            time = math.ceil(time)
         else:
-            time = int(time)         # bỏ phần thập phân
+            time = int(time)
 
-        data.append([service, distance, experience, hour, is_peak_hour, time])
+        data.append([
+            service,
+            distance,
+            experience,
+            hour,
+            is_peak_hour,
+            rain_ratio,
+            time
+        ])
 
     df = pd.DataFrame(data, columns=[
         "service",
@@ -105,17 +138,21 @@ def generate_repair_dataset(n_samples=10000, outlier_ratio=0.03, random_seed=42)
         "experience",
         "hour",
         "is_peak_hour",
+        "rain_ratio",
         "completion_time"
     ])
 
     return df
 
 
-# Generate data
-df = generate_repair_dataset(n_samples=60000, outlier_ratio=0.01)
+# =========================
+# GENERATE DATA
+# =========================
+df = generate_repair_dataset(n_samples=30000, outlier_ratio=0.01)
 
-# Save CSV
+# SAVE
 df.to_csv(r"E:\FixAI\data\output\datatest.csv", index=False)
 
 print("Dataset generated:", df.shape)
-print(df)
+print(df.head())
+
